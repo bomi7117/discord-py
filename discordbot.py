@@ -2,6 +2,12 @@ import nextcord
 from nextcord.ext import commands, tasks
 import sqlite3
 import datetime
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+TOKEN = os.getenv("TOKEN")
 
 # =========================
 # 설정
@@ -9,10 +15,8 @@ import datetime
 
 GUILD_ID = 1487065484913410119
 
-# 관리진 역할 ID
 STAFF_ROLE_ID = 1487065485009752233
 
-# 목표 점수
 TARGET_SCORE = 210
 
 # =========================
@@ -22,8 +26,9 @@ TARGET_SCORE = 210
 intents = nextcord.Intents.default()
 intents.voice_states = True
 intents.members = True
+intents.message_content = True
 
-bot = commands.Bot(intents=intents)
+bot = commands.Bot(command_prefix="!", intents=intents)
 
 # =========================
 # DB
