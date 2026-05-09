@@ -7,14 +7,13 @@ import datetime
 # 설정
 # =========================
 
-TOKEN = "MTM1NzAzOTIxNTYxMDgyMjY1Nw.GRx_1k.jbB8ecaX5NwS8fFUr5sIMnqlnj9nbW45CQfUnM"
-GUILD_ID = 956560175232327690
+GUILD_ID = 1487065484913410119
 
 # 관리진 역할 ID
-STAFF_ROLE_ID = 956563170795880459
+STAFF_ROLE_ID = 1487065485009752233
 
 # 목표 점수
-TARGET_SCORE = 330
+TARGET_SCORE = 210
 
 # =========================
 # 봇 설정
@@ -312,5 +311,7 @@ async def on_ready():
 # =========================
 # 실행
 # =========================
-
 bot.run(TOKEN)
+
+
+bot
