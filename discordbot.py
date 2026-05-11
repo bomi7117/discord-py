@@ -216,18 +216,19 @@ async def performance_rank(interaction: nextcord.Interaction):
 
     guild = interaction.guild
 
-    conn = sqlite3.connect(DB_FILE)
+    # 🔥 수정
+    conn = sqlite3.connect("performance.db")
     c = conn.cursor()
 
     ranking_data = []
 
     for member in guild.members:
 
-        # 🔥 관리진 역할 체크
         if any(role.id == STAFF_ROLE_ID for role in member.roles):
 
+            # 🔥 수정
             c.execute(
-                "SELECT score FROM voice_scores WHERE user_id=?",
+                "SELECT score FROM performance WHERE user_id=?",
                 (str(member.id),)
             )
 
@@ -277,18 +278,19 @@ async def performance_fail(interaction: nextcord.Interaction):
 
     guild = interaction.guild
 
-    conn = sqlite3.connect(DB_FILE)
+    # 🔥 수정
+    conn = sqlite3.connect("performance.db")
     c = conn.cursor()
 
     failed_members = []
 
     for member in guild.members:
 
-        # 🔥 관리진 역할 체크
         if any(role.id == STAFF_ROLE_ID for role in member.roles):
 
+            # 🔥 수정
             c.execute(
-                "SELECT score FROM voice_scores WHERE user_id=?",
+                "SELECT score FROM performance WHERE user_id=?",
                 (str(member.id),)
             )
 
