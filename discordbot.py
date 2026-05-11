@@ -212,6 +212,9 @@ async def my_performance(interaction: nextcord.Interaction):
 )
 async def performance_rank(interaction: nextcord.Interaction):
 
+    # 🔥 추가
+    await interaction.response.defer()
+
     guild = interaction.guild
 
     # 🔹 관리진 역할 있는 사람만 가져오기
@@ -261,8 +264,8 @@ async def performance_rank(interaction: nextcord.Interaction):
             inline=False
         )
 
-    await interaction.response.send_message(embed=embed)
-
+    await interaction.followup.send(embed=embed)
+    
 # =========================
 # 실적미달
 # =========================
@@ -273,6 +276,9 @@ async def performance_rank(interaction: nextcord.Interaction):
     guild_ids=[GUILD_ID]
 )
 async def performance_fail(interaction: nextcord.Interaction):
+
+    # 🔥 추가
+    await interaction.response.defer()
 
     guild = interaction.guild
 
@@ -319,7 +325,7 @@ async def performance_fail(interaction: nextcord.Interaction):
                 inline=False
             )
 
-    await interaction.response.send_message(embed=embed)
+    await interaction.followup.send(embed=embed)
 # =========================
 # 준비 완료
 # =========================
