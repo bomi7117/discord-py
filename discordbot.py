@@ -207,46 +207,38 @@ async def my_performance(interaction: nextcord.Interaction):
 
 @bot.slash_command(
     name="실적순위",
-    description="음성 실적 순위를 확인합니다.",
+    description="음성 실적 순위",
     guild_ids=[GUILD_ID]
 )
 async def performance_rank(interaction: nextcord.Interaction):
 
-    # 🔥 추가
     await interaction.response.defer()
 
     guild = interaction.guild
 
-    # 🔹 관리진 역할 있는 사람만 가져오기
-    staff_members = []
-
-    for member in guild.members:
-        if any(role.id in STAFF_ROLE_IDS for role in member.roles):
-            staff_members.append(member)
-
-    # 🔹 DB 점수 가져오기
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
 
     ranking_data = []
 
-    for member in staff_members:
+    for member in guild.members:
 
-        c.execute(
-            "SELECT score FROM voice_scores WHERE user_id=?",
-            (str(member.id),)
-        )
+        # 🔥 관리진 역할 체크
+        if any(role.id == STAFF_ROLE_ID for role in member.roles):
 
-        row = c.fetchone()
+            c.execute(
+                "SELECT score FROM voice_scores WHERE user_id=?",
+                (str(member.id),)
+            )
 
-        # 🔥 기록 없으면 0점
-        score = row[0] if row else 0
+            row = c.fetchone()
 
-        ranking_data.append((member, score))
+            score = row[0] if row else 0
+
+            ranking_data.append((member, score))
 
     conn.close()
 
-    # 🔹 점수 내림차순 정렬
     ranking_data.sort(key=lambda x: x[1], reverse=True)
 
     embed = nextcord.Embed(
@@ -254,15 +246,19 @@ async def performance_rank(interaction: nextcord.Interaction):
         color=0xffd700
     )
 
-    for idx, (member, score) in enumerate(ranking_data, start=1):
+    if not ranking_data:
+        embed.description = "관리진이 없습니다."
 
-        status = "✅ 완료" if score >= TARGET_SCORE else "❌ 미달"
+    else:
+        for idx, (member, score) in enumerate(ranking_data, start=1):
 
-        embed.add_field(
-            name=f"{idx}위 - {member.display_name}",
-            value=f"📊 {score}점 | {status}",
-            inline=False
-        )
+            status = "✅ 완료" if score >= TARGET_SCORE else "❌ 미달"
+
+            embed.add_field(
+                name=f"{idx}위 - {member.display_name}",
+                value=f"{score}점 | {status}",
+                inline=False
+            )
 
     await interaction.followup.send(embed=embed)
     
@@ -272,12 +268,11 @@ async def performance_rank(interaction: nextcord.Interaction):
 
 @bot.slash_command(
     name="실적미달",
-    description="실적 미달자 목록 확인",
+    description="실적 미달자 목록",
     guild_ids=[GUILD_ID]
 )
 async def performance_fail(interaction: nextcord.Interaction):
 
-    # 🔥 추가
     await interaction.response.defer()
 
     guild = interaction.guild
@@ -287,10 +282,10 @@ async def performance_fail(interaction: nextcord.Interaction):
 
     failed_members = []
 
-    # 🔹 관리진 역할 가진 사람 전체 검사
     for member in guild.members:
 
-        if any(role.id in STAFF_ROLE_IDS for role in member.roles):
+        # 🔥 관리진 역할 체크
+        if any(role.id == STAFF_ROLE_ID for role in member.roles):
 
             c.execute(
                 "SELECT score FROM voice_scores WHERE user_id=?",
@@ -299,7 +294,6 @@ async def performance_fail(interaction: nextcord.Interaction):
 
             row = c.fetchone()
 
-            # 🔥 기록 없으면 0점
             score = row[0] if row else 0
 
             if score < TARGET_SCORE:
@@ -313,7 +307,8 @@ async def performance_fail(interaction: nextcord.Interaction):
     )
 
     if not failed_members:
-        embed.description = "모든 관리진이 실적을 달성했습니다!"
+        embed.description = "모든 관리진이 실적을 달성했습니다."
+
     else:
         for member, score in failed_members:
 
@@ -321,7 +316,7 @@ async def performance_fail(interaction: nextcord.Interaction):
 
             embed.add_field(
                 name=member.display_name,
-                value=f"📊 {score}점\n부족한 점수 : {remain}점",
+                value=f"{score}점\n부족 점수 : {remain}점",
                 inline=False
             )
 
