@@ -202,57 +202,69 @@ async def my_performance(interaction: nextcord.Interaction):
     await interaction.response.send_message(embed=embed)
 
 # =========================
-# 실적 순위
+# 실적순위
 # =========================
 
 @bot.slash_command(
     name="실적순위",
-    description="음성 실적 랭킹",
+    description="음성 실적 순위를 확인합니다.",
     guild_ids=[GUILD_ID]
 )
 async def performance_rank(interaction: nextcord.Interaction):
 
-    with db() as conn:
-        c = conn.cursor()
+    guild = interaction.guild
 
-        c.execute("""
-            SELECT user_id, score
-            FROM performance
-            ORDER BY score DESC
-        """)
+    # 🔹 관리진 역할 있는 사람만 가져오기
+    staff_members = []
 
-        rows = c.fetchall()
+    for member in guild.members:
+        if any(role.id in STAFF_ROLE_IDS for role in member.roles):
+            staff_members.append(member)
 
-    if not rows:
-        await interaction.response.send_message("데이터가 없습니다.")
-        return
+    # 🔹 DB 점수 가져오기
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+
+    ranking_data = []
+
+    for member in staff_members:
+
+        c.execute(
+            "SELECT score FROM voice_scores WHERE user_id=?",
+            (str(member.id),)
+        )
+
+        row = c.fetchone()
+
+        # 🔥 기록 없으면 0점
+        score = row[0] if row else 0
+
+        ranking_data.append((member, score))
+
+    conn.close()
+
+    # 🔹 점수 내림차순 정렬
+    ranking_data.sort(key=lambda x: x[1], reverse=True)
 
     embed = nextcord.Embed(
         title="🏆 음성 실적 순위",
         color=0xffd700
     )
 
-    for idx, (user_id, score) in enumerate(rows, start=1):
+    for idx, (member, score) in enumerate(ranking_data, start=1):
 
-        member = interaction.guild.get_member(int(user_id))
-
-        if member:
-            name = member.display_name
-        else:
-            name = f"알 수 없음 ({user_id})"
-
-        status = "✅" if score >= TARGET_SCORE else "❌"
+        status = "✅ 완료" if score >= TARGET_SCORE else "❌ 미달"
 
         embed.add_field(
-            name=f"{idx}위",
-            value=f"{name}\n{score}점 {status}",
+            name=f"{idx}위 - {member.display_name}",
+            value=f"📊 {score}점 | {status}",
             inline=False
         )
 
     await interaction.response.send_message(embed=embed)
 
 # =========================
-# 실적 미달자 목록
+# 실적미달
 # =========================
 
 @bot.slash_command(
@@ -260,44 +272,54 @@ async def performance_rank(interaction: nextcord.Interaction):
     description="실적 미달자 목록 확인",
     guild_ids=[GUILD_ID]
 )
-async def low_performance(interaction: nextcord.Interaction):
+async def performance_fail(interaction: nextcord.Interaction):
 
-    with db() as conn:
-        c = conn.cursor()
+    guild = interaction.guild
 
-        c.execute("""
-            SELECT user_id, score
-            FROM performance
-            WHERE score < ?
-            ORDER BY score ASC
-        """, (TARGET_SCORE,))
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
 
-        rows = c.fetchall()
+    failed_members = []
 
-    if not rows:
-        await interaction.response.send_message(
-            "🎉 현재 실적 미달자가 없습니다!"
-        )
-        return
+    # 🔹 관리진 역할 가진 사람 전체 검사
+    for member in guild.members:
+
+        if any(role.id in STAFF_ROLE_IDS for role in member.roles):
+
+            c.execute(
+                "SELECT score FROM voice_scores WHERE user_id=?",
+                (str(member.id),)
+            )
+
+            row = c.fetchone()
+
+            # 🔥 기록 없으면 0점
+            score = row[0] if row else 0
+
+            if score < TARGET_SCORE:
+                failed_members.append((member, score))
+
+    conn.close()
 
     embed = nextcord.Embed(
         title="❌ 실적 미달자 목록",
-        color=0xff0000
+        color=0xff4444
     )
 
-    for user_id, score in rows:
+    if not failed_members:
+        embed.description = "모든 관리진이 실적을 달성했습니다!"
+    else:
+        for member, score in failed_members:
 
-        member = interaction.guild.get_member(int(user_id))
+            remain = TARGET_SCORE - score
 
-        if member:
             embed.add_field(
                 name=member.display_name,
-                value=f"{score}/{TARGET_SCORE}점",
+                value=f"📊 {score}점\n부족한 점수 : {remain}점",
                 inline=False
             )
 
     await interaction.response.send_message(embed=embed)
-
 # =========================
 # 준비 완료
 # =========================
